@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.1 — 2026-08-11
+
+### Changed
+
+- **Licence changed from GPL-3.0 to MIT.** The GPL is written for software that
+  is compiled and linked, and what counts as a derivative work of a declarative
+  YAML file is unclear at best. MIT is what the Home Assistant blueprint
+  ecosystem uses, and it removes any hesitation for anyone wanting to start from
+  this blueprint to write their own — which is how blueprints spread.
+
+  Copies already obtained under GPL-3.0 remain available under those terms; that
+  cannot be revoked. Everything from this version onwards is MIT.
+
 ## 2.0.0 — 2026-08-11
 
 A rewrite of how the blueprint applies colour. It used to send `light.turn_on`

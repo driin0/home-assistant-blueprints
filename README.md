@@ -137,4 +137,4 @@ Everything is grouped into sections, and the defaults suit most setups.
 
 ## Licence
 
-GPL-3.0. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
