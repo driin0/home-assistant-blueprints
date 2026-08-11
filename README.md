@@ -7,6 +7,7 @@ the URL of its `.yaml` file into **Settings → Automations & scenes → Bluepri
 | Blueprint | What it does |
 |---|---|
 | [Daily light colour adjustment](#daily-light-colour-adjustment) | Holds a colour and brightness on your lights, changing it by day |
+| [Automatic switch restart](#automatic-switch-restart) | Switches something back on after it turns itself off, with growing delays |
 
 ---
 
@@ -134,6 +135,88 @@ Everything is grouped into sections, and the defaults suit most setups.
 | Threshold time | 12:00 | When a new day begins — also selects which day the rotating modes are on. Pick a time when the lights are normally off. |
 | Active period | all day | When this automation works. Does **not** switch lights. |
 | Per-day colour, name, brightness, enable | — | Brightness always follows the weekday, in every mode |
+
+---
+
+## Automatic switch restart
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fdriin0%2Fhome-assistant-blueprints%2Fblob%2Fmain%2Fautomatic_switch_restart.yaml)
+
+Watches a switch and, when it turns itself off, switches it back on — waiting
+longer before each attempt, and giving up after a set number of tries.
+
+It was written for a residual-current device that trips on damp: the kind of
+trip that clears by itself hours later, leaving a freezer off in the meantime.
+
+### Read this first
+
+**This is not an auto-reclosing RCD, and cannot be one.** A commercial
+auto-reclosing device *measures the line's insulation before closing*: if the
+leakage is still there it refuses to reclose and locks out. That measurement is
+what you are paying for, and no automation can perform it.
+
+This blueprint has no way to tell a spurious trip from a genuine fault before
+restoring power. It restores power and watches whether the circuit stays up — a
+check made **after** the fact, not before. On a real insulation fault, power
+returns to the faulty circuit for a few seconds, as many times as you allow
+attempts.
+
+Keep the number of attempts low, and think about what the protected circuit
+actually is before using this at all.
+
+### How it works
+
+When the switch turns off, the automation immediately **disables its own
+control boolean**, then starts trying. Each attempt waits longer than the last —
+5 s, 10 s, 20 s with the default multiplier — up to a ceiling you set, because
+an uncapped exponential delay grows to absurd values.
+
+After switching back on, an attempt counts as successful only if the circuit
+**stays up** for the success timeout. If it does, the control boolean is
+switched back on and the cycle stops. If it trips again, the next attempt
+follows.
+
+If every attempt fails, the control boolean is **left off**. That is deliberate:
+automatic restarting stays disabled until a person decides to re-enable it.
+Something that re-arms itself after an inconclusive outcome is exactly what you
+do not want on a protective device.
+
+### When the device disappears with the power
+
+If the switch is a network device that goes offline when the circuit it sits on
+loses power — or when a router reboot takes the network down with it — set a
+**connectivity sensor**: a `binary_sensor` or a `device_tracker` that reports
+whether the device is reachable. The automation then waits for it to come back,
+and confirms the switch is still off, before trying anything. Commanding a
+device that cannot hear you achieves nothing.
+
+Every wait is bounded. If the device never comes back, the cycle ends with a
+notification instead of hanging — which matters more than it sounds, because the
+automation runs in single mode: one hung cycle would block every later trip from
+being handled at all.
+
+### Notifications
+
+Optional, and separately worded for each outcome: tripped, restarted, attempt
+failed, gave up, and device never came back. Each text is a field you can
+rewrite, including in your own language — the messages support `{{switch_name}}`,
+`{{current_attempt}}`, `{{next_attempt}}` and `{{max_attempts}}`.
+
+### Configuration reference
+
+| Setting | Default | Notes |
+|---|---|---|
+| Switch to monitor | — | The switch to restart |
+| Control boolean | — | Disabled while attempting; re-enabled only on success |
+| Delay before the first attempt | 5 s | |
+| Delay multiplier | 2.0 | Each attempt waits this much longer than the last |
+| Longest delay between attempts | 1 h | The ceiling the delay never exceeds |
+| Number of attempts | 3 | Keep it low on protective devices |
+| Success timeout | 30 s | How long it must stay up to count as recovered |
+| Connectivity sensor | empty | Optional; `binary_sensor` or `device_tracker` |
+| Give up waiting after | 300 s | Bound on waiting for the device to return |
+| Settle time after restarting | 10 s | Before checking reachability again |
+| Notifications | off | Five separately worded outcomes |
 
 ## Licence
 

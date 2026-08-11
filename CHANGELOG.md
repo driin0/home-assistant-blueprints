@@ -1,5 +1,50 @@
 # Changelog
 
+## 2.1.0 — 2026-08-11
+
+### Added
+
+- **`automatic_switch_restart`** joins the repository. It watches a switch and
+  restarts it after it turns itself off, with growing delays and a limited
+  number of attempts. It was previously published as a Gist, which stays where
+  it is, in Italian, for anyone who imported from it — the version maintained
+  from now on is this one.
+
+### Fixed in that blueprint, compared with the Gist
+
+Three defects, all of which could bite in normal use:
+
+- **A wait with no timeout could hang the automation permanently.** If the
+  connectivity sensor was configured and the device never came back, the cycle
+  stopped there — and since the automation runs in single mode, a hung cycle
+  blocks every later trip from being handled at all. Worse, the control boolean
+  is switched off at the start of a cycle, so the fail-safe turned from
+  "restarting stays disabled until you re-enable it" into "restarting stays
+  disabled and re-enabling it does nothing". Every wait is now bounded.
+- **The exponential backoff had no ceiling.** With a 20 s delay, a multiplier of
+  3 and 8 attempts, the last attempt landed 18 hours after the trip; the
+  selectors allowed combinations reaching centuries. A configurable maximum
+  delay now caps it.
+- **One outcome was silent.** "The device never became reachable" was the only
+  one of four results that sent no notification. It now has its own message.
+
+### Changed in that blueprint
+
+- Waits check the **state** rather than a transition. The original waited for a
+  transition to `off`, which only occurs if the device actually went away —
+  correct where a power cut takes the network down with it, a permanent hang
+  where the device stays reachable.
+- The connectivity sensor accepts a **`device_tracker`** as well as a
+  `binary_sensor`, and "reachable" means `on` or `home`.
+- The settle time after restarting is configurable instead of a fixed 10 s.
+- `mode: single` is explicit, with the reason written next to it.
+
+### Changed in both blueprints
+
+- Each declares **`author`** and a **minimum Home Assistant version** (2024.6.0:
+  sections in the configuration UI, and the notify entity platform). Without it,
+  an older installation fails with an error that says nothing about the cause.
+
 ## 2.0.1 — 2026-08-11
 
 ### Changed

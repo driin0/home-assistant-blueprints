@@ -11,6 +11,10 @@ blueprint:
     v2.0.0 — see CHANGELOG.md. If your lights are behind a relay, turn on the
     relay setting under Reconciliation: the default changed in this version.
   domain: automation
+  author: driin0
+  homeassistant:
+    # Sections in the configuration UI were introduced in 2024.6.
+    min_version: 2024.6.0
   input:
     entity_lights:
       name: Lights to adjust
